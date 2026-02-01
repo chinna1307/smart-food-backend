@@ -2,10 +2,12 @@ const express = require("express");
 const cors = require("cors");
 
 const app = express();
+
+// 1. Updated CORS for production
 app.use(cors());
 app.use(express.json());
 
-// in-memory storage
+// In-memory storage (Note: This resets on serverless cold starts)
 let requests = [];
 let donations = [];
 
@@ -40,10 +42,18 @@ app.post("/api/donate", (req, res) => {
 // ---------- MATCH ----------
 app.post("/api/match", (req, res) => {
   const { requestId } = req.body;
-  requests = requests.filter(r => r.id !== requestId);
+  // Note: Check for both string and number IDs since Date.now() is a number
+  requests = requests.filter(r => r.id !== Number(requestId) && r.id !== requestId);
   res.json({ success: true });
 });
 
-app.listen(5000, () =>
-  console.log("🚀 Backend running at http://localhost:5000")
-);
+// 2. Wrap app.listen so it doesn't conflict with Vercel's handler
+const PORT = process.env.PORT || 5000;
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () =>
+    console.log(`🚀 Local Backend running at http://localhost:${PORT}`)
+  );
+}
+
+// 3. EXPORT the app (Required for Vercel)
+module.exports = app;
