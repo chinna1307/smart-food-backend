@@ -3,15 +3,20 @@ const cors = require("cors");
 
 const app = express();
 
-// 1. Updated CORS for production
+/* ---------- Middleware ---------- */
 app.use(cors());
 app.use(express.json());
 
-// In-memory storage (Note: This resets on serverless cold starts)
+/* ---------- Root Test Route (Fixes Cannot GET /) ---------- */
+app.get("/", (req, res) => {
+  res.send("🚀 Smart Food Backend is Live");
+});
+
+/* ---------- In-Memory Data (for demo) ---------- */
 let requests = [];
 let donations = [];
 
-// ---------- REQUEST FOOD ----------
+/* ---------- REQUEST FOOD ---------- */
 app.post("/api/request", (req, res) => {
   const newReq = {
     id: Date.now(),
@@ -20,40 +25,45 @@ app.post("/api/request", (req, res) => {
     food: req.body.food,
     people: req.body.people
   };
+
   requests.push(newReq);
   res.json({ message: "Request saved", newReq });
 });
 
-// ---------- GET ALL REQUESTS ----------
+/* ---------- GET ALL REQUESTS ---------- */
 app.get("/api/request", (req, res) => {
   res.json(requests);
 });
 
-// ---------- DONATE FOOD ----------
+/* ---------- DONATE FOOD ---------- */
 app.post("/api/donate", (req, res) => {
   const donation = {
     id: Date.now(),
     ...req.body
   };
+
   donations.push(donation);
   res.json(donation);
 });
 
-// ---------- MATCH ----------
+/* ---------- MATCH & REMOVE REQUEST ---------- */
 app.post("/api/match", (req, res) => {
   const { requestId } = req.body;
-  // Note: Check for both string and number IDs since Date.now() is a number
-  requests = requests.filter(r => r.id !== Number(requestId) && r.id !== requestId);
+
+  requests = requests.filter(
+    r => r.id !== Number(requestId) && r.id !== requestId
+  );
+
   res.json({ success: true });
 });
 
-// 2. Wrap app.listen so it doesn't conflict with Vercel's handler
+/* ---------- Local Server (Only for Local) ---------- */
 const PORT = process.env.PORT || 5000;
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () =>
-    console.log(`🚀 Local Backend running at http://localhost:${PORT}`)
-  );
+if (process.env.NODE_ENV !== "production") {
+  app.listen(PORT, () => {
+    console.log(`🚀 Local Backend running at http://localhost:${PORT}`);
+  });
 }
 
-// 3. EXPORT the app (Required for Vercel)
+/* ---------- Export for Vercel ---------- */
 module.exports = app;
